@@ -8,21 +8,6 @@ import glob
 import os
 from scipy import linalg
 
-
-def to_cuda(elements):
-    """
-    Transfers elements to cuda if GPU is available
-    Args:
-        elements: torch.tensor or torch.nn.module
-        --
-    Returns:
-        elements: same as input on GPU memory, if available
-    """
-    if torch.cuda.is_available():
-        return elements.cuda()
-    return elements
-
-
 class PartialInceptionNetwork(nn.Module):
 
     def __init__(self, transform_input=True):
@@ -225,55 +210,15 @@ def calculate_fid(images1, images2, use_multiprocessing, batch_size):
     fid = calculate_frechet_distance(mu1, sigma1, mu2, sigma2)
     return fid
 
-
-def load_images(path):
-    """ Loads all .png or .jpg images from a given path
-    Warnings: Expects all images to be of same dtype and shape.
-    Args:
-        path: relative path to directory
-    Returns:
-        final_images: np.array of image dtype and shape.
+def to_cuda(elements):
     """
-    image_paths = []
-    image_extensions = ["png", "jpg"]
-    for ext in image_extensions:
-        print("Looking for images in", os.path.join(path, "*.{}".format(ext)))
-        for impath in glob.glob(os.path.join(path, "*.{}".format(ext))):
-            image_paths.append(impath)
-    first_image = cv2.imread(image_paths[0])
-    W, H = first_image.shape[:2]
-    image_paths.sort()
-    image_paths = image_paths
-    final_images = np.zeros((len(image_paths), H, W, 3), dtype=first_image.dtype)
-    for idx, impath in enumerate(image_paths):
-        im = cv2.imread(impath)
-        im = im[:, :, ::-1]  # Convert from BGR to RGB
-        assert im.dtype == final_images.dtype
-        final_images[idx] = im
-    return final_images
-
-
-if __name__ == "__main__":
-    from optparse import OptionParser
-
-    parser = OptionParser()
-    parser.add_option("--p1", "--path1", dest="path1",
-                      help="Path to directory containing the real images")
-    parser.add_option("--p2", "--path2", dest="path2",
-                      help="Path to directory containing the generated images")
-    parser.add_option("--multiprocessing", dest="use_multiprocessing",
-                      help="Toggle use of multiprocessing for image pre-processing. Defaults to use all cores",
-                      default=False,
-                      action="store_true")
-    parser.add_option("-b", "--batch-size", dest="batch_size",
-                      help="Set batch size to use for InceptionV3 network",
-                      type=int)
-
-    options, _ = parser.parse_args()
-    assert options.path1 is not None, "--path1 is an required option"
-    assert options.path2 is not None, "--path2 is an required option"
-    assert options.batch_size is not None, "--batch_size is an required option"
-    images1 = load_images(options.path1)
-    images2 = load_images(options.path2)
-    fid_value = calculate_fid(images1, images2, options.use_multiprocessing, options.batch_size)
-    print(fid_value)
+    Transfers elements to cuda if GPU is available
+    Args:
+        elements: torch.tensor or torch.nn.module
+        --
+    Returns:
+        elements: same as input on GPU memory, if available
+    """
+    if torch.cuda.is_available():
+        return elements.cuda()
+    return elements
